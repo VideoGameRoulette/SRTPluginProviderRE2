@@ -1,6 +1,7 @@
 ﻿using ProcessMemory;
 using SRTPluginProviderRE2.Structures;
 using System;
+using System.Diagnostics;
 
 namespace SRTPluginProviderRE2
 {
@@ -10,8 +11,8 @@ namespace SRTPluginProviderRE2
         private ProcessMemory.ProcessMemory memoryAccess;
         private GameMemoryRE2 gameMemoryValues;
         public bool HasScanned;
-        public bool ProcessRunning => memoryAccess.ProcessRunning;
-        public int ProcessExitCode => memoryAccess.ProcessExitCode;
+        public bool ProcessRunning => memoryAccess != null && memoryAccess.ProcessRunning;
+        public int ProcessExitCode => (memoryAccess != null) ? memoryAccess.ProcessExitCode : 0;
 
         // Pointer Address Variables
         private long pointerAddressIGT;
@@ -27,29 +28,41 @@ namespace SRTPluginProviderRE2
         private MultilevelPointer PointerPlayerHP { get; set; }
         private MultilevelPointer[] PointerEnemyEntries { get; set; }
         private MultilevelPointer[] PointerInventoryEntries { get; set; }
-        private MultilevelPointer PointerInventoryCount { get; set; }
+        //private MultilevelPointer PointerInventoryCount { get; set; }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="proc"></param>
-        internal GameMemoryRE2Scanner(int pid)
+        internal GameMemoryRE2Scanner(Process process = null)
         {
             gameMemoryValues = new GameMemoryRE2();
-            memoryAccess = new ProcessMemory.ProcessMemory(pid);
-            BaseAddress = NativeWrappers.GetProcessBaseAddress(pid, PInvoke.ListModules.LIST_MODULES_64BIT).ToInt64(); // Bypass .NET's managed solution for getting this and attempt to get this info ourselves via PInvoke since some users are getting 299 PARTIAL COPY when they seemingly shouldn't.
+            if (process != null)
+                Initialize(process);
+        }
+        internal void Initialize(Process process)
+        {
+            if (process == null)
+                return; // Do not continue if this is null.
+
             SelectPointerAddresses();
 
-            // Setup the pointers.
-            PointerIGT = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressIGT, 0x2E0L, 0x218L, 0x610L, 0x710L, 0x60L);
-            PointerRank = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressRank);
-            PointerPlayerHP = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressHP, 0x50L, 0x20L);
-            GenerateEnemyEntries();
+            int pid = GetProcessId(process).Value;
+            memoryAccess = new ProcessMemory.ProcessMemory(pid);
+            if (ProcessRunning)
+            {
+                BaseAddress = NativeWrappers.GetProcessBaseAddress(pid, PInvoke.ListModules.LIST_MODULES_64BIT).ToInt64(); // Bypass .NET's managed solution for getting this and attempt to get this info ourselves via PInvoke since some users are getting 299 PARTIAL COPY when they seemingly shouldn't.
 
-            PointerInventoryEntries = new MultilevelPointer[20];
-            for (long i = 0; i < PointerInventoryEntries.Length; ++i)
-                PointerInventoryEntries[i] = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressInventory, 0x50L, 0x98L, 0x10L, 0x20L + (i * 0x08L), 0x18L);
+                // Setup the pointers.
+                PointerIGT = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressIGT, 0x2E0L, 0x218L, 0x610L, 0x710L, 0x60L);
+                PointerRank = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressRank);
+                PointerPlayerHP = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressHP, 0x50L, 0x20L);
+                GenerateEnemyEntries();
 
+                PointerInventoryEntries = new MultilevelPointer[20];
+                for (long i = 0; i < PointerInventoryEntries.Length; ++i)
+                    PointerInventoryEntries[i] = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressInventory, 0x50L, 0x98L, 0x10L, 0x20L + (i * 0x08L), 0x18L);
+            }
         }
 
         private void SelectPointerAddresses()
@@ -85,7 +98,7 @@ namespace SRTPluginProviderRE2
             for (int i = 0; i < PointerEnemyEntries.Length; ++i)
                 PointerEnemyEntries[i].UpdatePointers();
 
-            PointerInventoryCount.UpdatePointers();
+            //PointerInventoryCount.UpdatePointers();
             for (int i = 0; i < PointerInventoryEntries.Length; ++i)
                 PointerInventoryEntries[i].UpdatePointers();
 
@@ -128,7 +141,7 @@ namespace SRTPluginProviderRE2
             }
 
             // Inventory
-            gameMemoryValues.PlayerInventoryCount = PointerInventoryCount.DerefInt(0x90);
+            //gameMemoryValues.PlayerInventoryCount = PointerInventoryCount.DerefInt(0x90);
             if (gameMemoryValues.PlayerInventory == null)
             {
                 gameMemoryValues.PlayerInventory = new InventoryEntry[20];
@@ -137,18 +150,20 @@ namespace SRTPluginProviderRE2
             }
             for (int i = 0; i < PointerInventoryEntries.Length; ++i)
             {
-                if (i < gameMemoryValues.PlayerInventoryCount)
-                {
+                //if (i < gameMemoryValues.PlayerInventoryCount)
+                //{
                     long invDataOffset = PointerInventoryEntries[i].DerefLong(0x10) - PointerInventoryEntries[i].Address;
                     gameMemoryValues.PlayerInventory[i].SetValues(PointerInventoryEntries[i].DerefInt(0x28), PointerInventoryEntries[i].DerefByteArray(invDataOffset + 0x10, 0x14));
-                }
-                else
-                    gameMemoryValues.PlayerInventory[i].SetValues(PointerInventoryEntries[i].DerefInt(0x28), null);
+                //}
+                //else
+                    //gameMemoryValues.PlayerInventory[i].SetValues(PointerInventoryEntries[i].DerefInt(0x28), null);
             }
 
             HasScanned = true;
             return gameMemoryValues;
         }
+
+        private int? GetProcessId(Process process) => process?.Id;
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

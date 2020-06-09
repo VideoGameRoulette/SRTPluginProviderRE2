@@ -9,7 +9,6 @@ namespace SRTPluginProviderRE2
         private const string IGT_TIMESPAN_STRING_FORMAT = @"hh\:mm\:ss\.fff";
         public int PlayerCurrentHealth { get; set; }
         public int PlayerMaxHealth { get; set; }
-        public int PlayerInventoryCount { get; set; }
         public InventoryEntry[] PlayerInventory { get; set; }
         public EnemyHP[] EnemyHealth { get; set; }
         public long IGTRunningTimer { get; set; }
