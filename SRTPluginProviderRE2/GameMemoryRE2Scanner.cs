@@ -27,6 +27,7 @@ namespace SRTPluginProviderRE2
         private MultilevelPointer PointerRank { get; set; }
         private MultilevelPointer PointerPlayerHP { get; set; }
         private MultilevelPointer[] PointerEnemyEntries { get; set; }
+        private MultilevelPointer PointerInventoryCount { get; set; }
         private MultilevelPointer[] PointerInventoryEntries { get; set; }
         //private MultilevelPointer PointerInventoryCount { get; set; }
 
@@ -59,6 +60,7 @@ namespace SRTPluginProviderRE2
                 PointerPlayerHP = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressHP, 0x50L, 0x20L);
                 GenerateEnemyEntries();
 
+                PointerInventoryCount = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressInventory, 0x50L);
                 PointerInventoryEntries = new MultilevelPointer[20];
                 for (long i = 0; i < PointerInventoryEntries.Length; ++i)
                     PointerInventoryEntries[i] = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressInventory, 0x50L, 0x98L, 0x10L, 0x20L + (i * 0x08L), 0x18L);
@@ -98,7 +100,7 @@ namespace SRTPluginProviderRE2
             for (int i = 0; i < PointerEnemyEntries.Length; ++i)
                 PointerEnemyEntries[i].UpdatePointers();
 
-            //PointerInventoryCount.UpdatePointers();
+            PointerInventoryCount.UpdatePointers();
             for (int i = 0; i < PointerInventoryEntries.Length; ++i)
                 PointerInventoryEntries[i].UpdatePointers();
 
@@ -141,7 +143,7 @@ namespace SRTPluginProviderRE2
             }
 
             // Inventory
-            //gameMemoryValues.PlayerInventoryCount = PointerInventoryCount.DerefInt(0x90);
+            gameMemoryValues.PlayerInventoryCount = PointerInventoryCount.DerefInt(0x90);
             if (gameMemoryValues.PlayerInventory == null)
             {
                 gameMemoryValues.PlayerInventory = new InventoryEntry[20];
@@ -150,13 +152,13 @@ namespace SRTPluginProviderRE2
             }
             for (int i = 0; i < PointerInventoryEntries.Length; ++i)
             {
-                //if (i < gameMemoryValues.PlayerInventoryCount)
-                //{
+                if (i < gameMemoryValues.PlayerInventoryCount)
+                {
                     long invDataOffset = PointerInventoryEntries[i].DerefLong(0x10) - PointerInventoryEntries[i].Address;
                     gameMemoryValues.PlayerInventory[i].SetValues(PointerInventoryEntries[i].DerefInt(0x28), PointerInventoryEntries[i].DerefByteArray(invDataOffset + 0x10, 0x14));
-                //}
-                //else
-                    //gameMemoryValues.PlayerInventory[i].SetValues(PointerInventoryEntries[i].DerefInt(0x28), null);
+                }
+                else
+                    gameMemoryValues.PlayerInventory[i].SetValues(PointerInventoryEntries[i].DerefInt(0x28), null);
             }
 
             HasScanned = true;

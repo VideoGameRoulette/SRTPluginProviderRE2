@@ -7,6 +7,7 @@ namespace SRTPluginProviderRE2
     {
         int PlayerCurrentHealth { get; set; }
         int PlayerMaxHealth { get; set; }
+        int PlayerInventoryCount { get; set; }
         InventoryEntry[] PlayerInventory { get; set; }
         EnemyHP[] EnemyHealth { get; set; }
         long IGTRunningTimer { get; set; }
