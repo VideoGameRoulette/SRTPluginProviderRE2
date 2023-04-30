@@ -1,28 +1,25 @@
-﻿using SRTPluginProviderRE2.Structures;
+﻿using SRTPluginProviderRE2.Structs;
+using SRTPluginProviderRE2.Structs.GameStructs;
 using System;
 
 namespace SRTPluginProviderRE2
 {
     public interface IGameMemoryRE2
     {
-        int PlayerCurrentHealth { get; set; }
-        int PlayerMaxHealth { get; set; }
-        int PlayerInventoryCount { get; set; }
-        InventoryEntry[] PlayerInventory { get; set; }
-        EnemyHP[] EnemyHealth { get; set; }
-        long IGTRunningTimer { get; set; }
-        long IGTCutsceneTimer { get; set; }
-        long IGTMenuTimer { get; set; }
-        long IGTPausedTimer { get; set; }
-        int Rank { get; set; }
-        float RankScore { get; set; }
-        bool IsRunning { get; set; }
-        bool IsCutscene { get; set; }
-        bool IsMenu { get; set; }
-        bool IsPaused { get; set; }
-        long IGTCalculated { get; }
-        long IGTCalculatedTicks { get; }
-        TimeSpan IGTTimeSpan { get; }
-        string IGTFormattedString { get; }
+        string GameName { get; }
+
+        string VersionInfo { get; }
+
+        GameTimer Timer { get; }
+
+        RankManager RankManager { get; }
+
+        Player PlayerManager { get; }
+
+        int InventoryCount { get; }
+
+        int EnemyCount { get; }
+
+        int EnemyKillCount { get; }
     }
 }

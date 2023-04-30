@@ -1,5 +1,5 @@
 ﻿using ProcessMemory;
-using SRTPluginProviderRE2.Structures;
+using SRTPluginProviderRE2.Structs.GameStructs;
 using System;
 using System.Diagnostics;
 
@@ -7,83 +7,91 @@ namespace SRTPluginProviderRE2
 {
     internal class GameMemoryRE2Scanner : IDisposable
     {
+        // private readonly int MAX_ENTITES = 32;
+        private readonly int MAX_ITEMS = 20;
+        private readonly int mSize = 0x18;
+
         // Variables
-        private ProcessMemory.ProcessMemory memoryAccess;
+        private ProcessMemoryHandler memoryAccess;
         private GameMemoryRE2 gameMemoryValues;
         public bool HasScanned;
         public bool ProcessRunning => memoryAccess != null && memoryAccess.ProcessRunning;
         public int ProcessExitCode => (memoryAccess != null) ? memoryAccess.ProcessExitCode : 0;
 
         // Pointer Address Variables
-        private long pointerAddressIGT;
-        private long pointerAddressRank;
-        private long pointerAddressHP;
-        private long pointerAddressInventory;
-        private long pointerAddressEnemy;
+        private int paGameClock;
+        private int paGameRankSystem;
+        private int paPlayerManager;
+        private int paInventoryManager;
+        private int paEnemyManager;
 
         // Pointer Classes
-        private long BaseAddress { get; set; }
-        private MultilevelPointer PointerIGT { get; set; }
-        private MultilevelPointer PointerRank { get; set; }
-        private MultilevelPointer PointerPlayerHP { get; set; }
-        private MultilevelPointer[] PointerEnemyEntries { get; set; }
-        private MultilevelPointer PointerInventoryCount { get; set; }
-        private MultilevelPointer[] PointerInventoryEntries { get; set; }
-        //private MultilevelPointer PointerInventoryCount { get; set; }
+        private IntPtr BaseAddress { get; set; }
+        private MultilevelPointer PointerGameClock { get; set; }
+        private MultilevelPointer PointerGameRankSystem { get; set; }
+        private MultilevelPointer PointerPlayerCondition { get; set; }
+        private MultilevelPointer PointerInventoryManager { get; set; }
+        private MultilevelPointer PointerEnemyManager { get; set; }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="proc"></param>
+        // private InventoryEntry EmptySlot = new InventoryEntry();
+        private DifficultyParamClass[] dpc;
+
         internal GameMemoryRE2Scanner(Process process = null)
         {
             gameMemoryValues = new GameMemoryRE2();
             if (process != null)
                 Initialize(process);
         }
-        internal void Initialize(Process process)
+
+        internal unsafe void InitGMV()
+        {
+            dpc = new DifficultyParamClass[3];
+            gameMemoryValues._timer = new GameTimer();
+            gameMemoryValues._rankManager = new RankManager();
+            gameMemoryValues._playerManager = new Player();
+        }
+
+        internal unsafe void Initialize(Process process)
         {
             if (process == null)
                 return; // Do not continue if this is null.
 
-            SelectPointerAddresses();
+            if (!SelectPointerAddresses(GameHashes.DetectVersion(process.MainModule.FileName)))
+                return; // Unknown version.
 
             int pid = GetProcessId(process).Value;
-            memoryAccess = new ProcessMemory.ProcessMemory(pid);
+            memoryAccess = new ProcessMemoryHandler(pid);
             if (ProcessRunning)
             {
-                BaseAddress = NativeWrappers.GetProcessBaseAddress(pid, PInvoke.ListModules.LIST_MODULES_64BIT).ToInt64(); // Bypass .NET's managed solution for getting this and attempt to get this info ourselves via PInvoke since some users are getting 299 PARTIAL COPY when they seemingly shouldn't.
+                BaseAddress = NativeWrappers.GetProcessBaseAddress(pid, PInvoke.ListModules.LIST_MODULES_64BIT); // Bypass .NET's managed solution for getting this and attempt to get this info ourselves via PInvoke since some users are getting 299 PARTIAL COPY when they seemingly shouldn't.
 
                 // Setup the pointers.
-                PointerIGT = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressIGT, 0x2E0L, 0x218L, 0x610L, 0x710L, 0x60L);
-                PointerRank = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressRank);
-                PointerPlayerHP = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressHP, 0x50L, 0x20L);
-                GenerateEnemyEntries();
-
-                PointerInventoryCount = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressInventory, 0x50L);
-                PointerInventoryEntries = new MultilevelPointer[20];
-                for (long i = 0; i < PointerInventoryEntries.Length; ++i)
-                    PointerInventoryEntries[i] = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressInventory, 0x50L, 0x98L, 0x10L, 0x20L + (i * 0x08L), 0x18L);
+                InitGMV();
+                PointerGameClock = new MultilevelPointer(memoryAccess, IntPtr.Add(BaseAddress, paGameClock));
+                PointerGameRankSystem = new MultilevelPointer(memoryAccess, IntPtr.Add(BaseAddress, paGameRankSystem));
+                PointerPlayerCondition = new MultilevelPointer(memoryAccess, IntPtr.Add(BaseAddress, paPlayerManager), 0x50, 0x10, 0x20);
+                PointerInventoryManager = new MultilevelPointer(memoryAccess, IntPtr.Add(BaseAddress, paInventoryManager), 0x58);
+                PointerEnemyManager = new MultilevelPointer(memoryAccess, IntPtr.Add(BaseAddress, paEnemyManager), 0x50);
             }
         }
 
-        private void SelectPointerAddresses()
+        private bool SelectPointerAddresses(GameVersion version)
         {
-            pointerAddressIGT = 0x07097EF8;
-            pointerAddressRank = 0x070A7C88;
-            pointerAddressHP = 0x070A17E0;
-            pointerAddressInventory = 0x070A17E0;
-            pointerAddressEnemy = 0x070960E0;
-        }
+            switch (version)
+            {
+                case GameVersion.RE2_WW_20230418_1:
+                    {
+                        paGameRankSystem = 0x09184EC0;
+                        paPlayerManager = 0x091AD1F0;
+                        paGameClock = 0x091AEC78;
+                        paInventoryManager = 0x091A6CD0;
+                        paEnemyManager = 0x091A6A08;
+                        return true;
+                    }
+            }
 
-        /// <summary>
-        /// Dereferences a 4-byte signed integer via the PointerEnemyEntryCount pointer to detect how large the enemy pointer table is and then create the pointer table entries if required.
-        /// </summary>
-        private void GenerateEnemyEntries()
-        {
-            PointerEnemyEntries = new MultilevelPointer[32]; // Create a new enemy pointer table array with the detected size.
-            for (long i = 0; i < PointerEnemyEntries.Length; ++i) // Loop through and create all of the pointers for the table.
-                PointerEnemyEntries[i] = new MultilevelPointer(memoryAccess, BaseAddress + pointerAddressEnemy, 0x80L + (i * 0x08L), 0x88L, 0x18L, 0x1A0L);
+            // If we made it this far... rest in pepperonis. We have failed to detect any of the correct versions we support and have no idea what pointer addresses to use. Bail out.
+            return false;
         }
 
         /// <summary>
@@ -91,75 +99,51 @@ namespace SRTPluginProviderRE2
         /// </summary>
         internal void UpdatePointers()
         {
-            PointerIGT.UpdatePointers();
-            PointerPlayerHP.UpdatePointers();
-            PointerRank.UpdatePointers();
-
-            GenerateEnemyEntries(); // This has to be here for the next part.
-
-            for (int i = 0; i < PointerEnemyEntries.Length; ++i)
-                PointerEnemyEntries[i].UpdatePointers();
-
-            PointerInventoryCount.UpdatePointers();
-            for (int i = 0; i < PointerInventoryEntries.Length; ++i)
-                PointerInventoryEntries[i].UpdatePointers();
-
+            PointerGameClock.UpdatePointers();
+            PointerGameRankSystem.UpdatePointers();
+            PointerPlayerCondition.UpdatePointers();
+            PointerInventoryManager.UpdatePointers();
+            PointerEnemyManager.UpdatePointers();
         }
 
-        internal IGameMemoryRE2 Refresh()
+        internal unsafe IGameMemoryRE2 Refresh()
         {
-            // IGT
-            gameMemoryValues.IGTRunningTimer = PointerIGT.DerefLong(0x18);
-            gameMemoryValues.IGTCutsceneTimer = PointerIGT.DerefLong(0x20);
-            gameMemoryValues.IGTMenuTimer = PointerIGT.DerefLong(0x28);
-            gameMemoryValues.IGTPausedTimer = PointerIGT.DerefLong(0x30);
+            // GameClock
+            var gc = PointerGameClock.Deref<GameClock>(0x0);
+            var gsd = memoryAccess.GetAt<GameClockGameSaveData>(gc.GameSaveData);
+            gameMemoryValues._timer.SetValues(gc, gsd);
 
-            // Player HP
-            gameMemoryValues.PlayerMaxHealth = PointerPlayerHP.DerefInt(0x54);
-            gameMemoryValues.PlayerCurrentHealth = PointerPlayerHP.DerefInt(0x58);
-            gameMemoryValues.Rank = PointerRank.DerefInt(0x58);
-            gameMemoryValues.RankScore = PointerRank.DerefFloat(0x5C);
+            // GameRankSystem
+            var grs = PointerGameRankSystem.Deref<GameRankSystem>(0x0);
+            var grpd = memoryAccess.GetAt<GameRankParameterData>(grs.GameRankParameter);
+            dpc[0] = memoryAccess.GetAt<DifficultyParamClass>(grpd.DifficultyParamEasy);
+            dpc[1] = memoryAccess.GetAt<DifficultyParamClass>(grpd.DifficultyParamNormal);
+            dpc[2] = memoryAccess.GetAt<DifficultyParamClass>(grpd.DifficultyParamHard);
+            gameMemoryValues._rankManager.SetValues(grs, dpc);
 
-            // Enemy HP
-            GenerateEnemyEntries();
-            if (gameMemoryValues.EnemyHealth == null)
-            {
-                gameMemoryValues.EnemyHealth = new EnemyHP[32];
-                for (int i = 0; i < gameMemoryValues.EnemyHealth.Length; ++i)
-                    gameMemoryValues.EnemyHealth[i] = new EnemyHP();
-            }
-            for (int i = 0; i < gameMemoryValues.EnemyHealth.Length; ++i)
-            {
-                if (i < PointerEnemyEntries.Length)
-                { // While we're within the size of the enemy table, set the values.
-                    gameMemoryValues.EnemyHealth[i].MaximumHP = PointerEnemyEntries[i].DerefInt(0x54);
-                    gameMemoryValues.EnemyHealth[i].CurrentHP = PointerEnemyEntries[i].DerefInt(0x58);
-                }
-                else
-                { // We're beyond the current size of the enemy table. It must have shrunk because it was larger before but for the sake of performance, we're not going to constantly recreate the array any time the size doesn't match. Just blank out the remaining array values.
-                    gameMemoryValues.EnemyHealth[i].MaximumHP = 0;
-                    gameMemoryValues.EnemyHealth[i].CurrentHP = 0;
-                }
-            }
+            // PlayerManager
+            var pc = PointerPlayerCondition.Deref<PlayerCondition>(0x0);
+            var cc = memoryAccess.GetAt<CostumeChanger>(pc.CostumeChanger);
+            var hpc = memoryAccess.GetAt<HitPointController>(pc.HitPointController);
+            gameMemoryValues._playerManager.SetValues(pc, cc, hpc);
 
-            // Inventory
-            gameMemoryValues.PlayerInventoryCount = PointerInventoryCount.DerefInt(0x90);
-            if (gameMemoryValues.PlayerInventory == null)
-            {
-                gameMemoryValues.PlayerInventory = new InventoryEntry[20];
-                for (int i = 0; i < gameMemoryValues.PlayerInventory.Length; ++i)
-                    gameMemoryValues.PlayerInventory[i] = new InventoryEntry();
-            }
-            for (int i = 0; i < PointerInventoryEntries.Length; ++i)
-            {
-                if (i < gameMemoryValues.PlayerInventoryCount)
-                {
-                    long invDataOffset = PointerInventoryEntries[i].DerefLong(0x10) - PointerInventoryEntries[i].Address;
-                    gameMemoryValues.PlayerInventory[i].SetValues(PointerInventoryEntries[i].DerefInt(0x28), PointerInventoryEntries[i].DerefByteArray(invDataOffset + 0x10, 0x14));
-                }
-                else
-                    gameMemoryValues.PlayerInventory[i].SetValues(PointerInventoryEntries[i].DerefInt(0x28), null);
-            }
+            // InventoryManager
+            var im = PointerInventoryManager.Deref<InventoryManager>(0x0);
+            var invArray = memoryAccess.GetAt<ListInventory>(im.Inventory);
+            var inv = memoryAccess.GetAt<Inventory>(invArray._ListInventory);
+            var slots = memoryAccess.GetAt<Slots>(inv.ListSlots);
+            // Console.WriteLine(slots._Slots.ToString("X8"));
+            gameMemoryValues._inventoryCount = inv.CurrentSlotSize;
+            gameMemoryValues._inventoryMaxCount = slots.Count;
+            
+            // TO-DO LOOP THRU INVENTROY ARRAY AND UPDATE GAME MEMORY VALUES FOR DATA
+
+            // EnemyManager
+            gameMemoryValues._enemyCount = PointerEnemyManager.DerefInt(mSize);
+            var enemies = PointerEnemyManager.Deref<EnemyManager>(0x0);
+            gameMemoryValues._enemyKillCount = enemies.TotalEnemyKillCount;
+
+            // TO-DO LOOP THRU ENEMY ARRAY AND UPDATE GAME MEMORY VALUES FOR DATA
 
             HasScanned = true;
             return gameMemoryValues;

@@ -1,48 +1,35 @@
-﻿using SRTPluginProviderRE2.Structures;
+﻿using SRTPluginProviderRE2.Structs.GameStructs;
 using System;
+using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 
 namespace SRTPluginProviderRE2
 {
     public struct GameMemoryRE2 : IGameMemoryRE2
     {
-        private const string IGT_TIMESPAN_STRING_FORMAT = @"hh\:mm\:ss\.fff";
-        public int PlayerCurrentHealth { get; set; }
-        public int PlayerMaxHealth { get; set; }
-        public int PlayerInventoryCount { get; set; }
-        public InventoryEntry[] PlayerInventory { get; set; }
-        public EnemyHP[] EnemyHealth { get; set; }
-        public long IGTRunningTimer { get; set; }
-        public long IGTCutsceneTimer { get; set; }
-        public long IGTMenuTimer { get; set; }
-        public long IGTPausedTimer { get; set; }
-        public int Rank { get; set; }
-        public float RankScore { get; set; }
-        public bool IsRunning { get; set; }
-        public bool IsCutscene { get; set; }
-        public bool IsMenu { get; set; }
-        public bool IsPaused { get; set; }
+        public string GameName => "RE2R";
 
-        // Public Properties - Calculated
-        public long IGTCalculated => unchecked(IGTRunningTimer - IGTCutsceneTimer - IGTPausedTimer);
+        public string VersionInfo => FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
 
-        public long IGTCalculatedTicks => unchecked(IGTCalculated * 10L);
+        public GameTimer Timer { get => _timer; set => _timer = value; }
+        internal GameTimer _timer;
 
-        public TimeSpan IGTTimeSpan
-        {
-            get
-            {
-                TimeSpan timespanIGT;
+        public RankManager RankManager { get => _rankManager; set => _rankManager = value; }
+        internal RankManager _rankManager;
 
-                if (IGTCalculatedTicks <= TimeSpan.MaxValue.Ticks)
-                    timespanIGT = new TimeSpan(IGTCalculatedTicks);
-                else
-                    timespanIGT = new TimeSpan();
+        public Player PlayerManager { get => _playerManager; set => _playerManager = value; }
+        internal Player _playerManager;
 
-                return timespanIGT;
-            }
-        }
+        public int InventoryCount { get => _inventoryCount; set => _inventoryCount = value; }
+        internal int _inventoryCount;
+        public int InventoryMaxCount { get => _inventoryMaxCount; set => _inventoryMaxCount = value; }
+        internal int _inventoryMaxCount;
 
-        public string IGTFormattedString => IGTTimeSpan.ToString(IGT_TIMESPAN_STRING_FORMAT, CultureInfo.InvariantCulture);
+        public int EnemyCount { get => _enemyCount; set => _enemyCount = value; }
+        internal int _enemyCount;
+
+        public int EnemyKillCount { get => _enemyKillCount; set => _enemyKillCount = value; }
+        internal int _enemyKillCount;
     }
 }

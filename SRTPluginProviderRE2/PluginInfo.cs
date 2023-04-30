@@ -9,9 +9,9 @@ namespace SRTPluginProviderRE2
 
         public string Description => "A game memory provider plugin for Resident Evil 2 (2019).";
 
-        public string Author => "VideoGameRoulette";
+        public string Author => "Squirrelies";
 
-        public Uri MoreInfoURL => new Uri("https://github.com/VideoGameRoulette");
+        public Uri MoreInfoURL => new Uri("https://github.com/SpeedrunTooling/SRTPluginProviderRE2");
 
         public int VersionMajor => assemblyVersion.Major;
 
