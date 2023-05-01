@@ -16,6 +16,7 @@
     <DebugType>embedded</DebugType>
     <!-- netcoreapp3.1 had to be hardcoded here because this project reports $(TargetFramework) as netstandard2.0 (rightfully so) and I am not sure how this project's csproj can auto-detect another project's framework version to copy it to the appropriate folder so we're just... hardcoding this. -->
     <CopyDestionationPath>$(SolutionDir)..\..\Squirrelies\SRTHost\SRTHost\bin\$(Configuration)\net5.0-windows\plugins</CopyDestionationPath>
+	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -39,7 +40,10 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Squirrelies\ProcessMemory\ProcessMemory\ProcessMemory.csproj" />
+    <PackageReference Include="ProcessMemory64" Version="4.0.*-*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\Squirrelies\SRTHost\SRTPluginBase\SRTPluginBase.csproj">
       <Private>false</Private>
       <ExcludeAssets>runtime</ExcludeAssets>

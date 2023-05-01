@@ -32,6 +32,9 @@ namespace SRTPluginProviderRE2
         public int EnemyCount { get => _enemyCount; set => _enemyCount = value; }
         internal int _enemyCount;
 
+        public Enemy[] Enemies { get => _enemies; set => _enemies = value; }
+        internal Enemy[] _enemies;
+
         public int EnemyKillCount { get => _enemyKillCount; set => _enemyKillCount = value; }
         internal int _enemyKillCount;
     }

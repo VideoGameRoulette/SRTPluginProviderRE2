@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30114.105
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProcessMemory", "..\..\Squirrelies\ProcessMemory\ProcessMemory\ProcessMemory.csproj", "{FFB63975-C00B-42C7-9272-74A98F282FED}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRTPluginBase", "..\..\Squirrelies\SRTHost\SRTPluginBase\SRTPluginBase.csproj", "{8A136F88-A661-40E7-AE8E-70D0A40F3A70}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRTPluginBase", "..\SRTHost\SRTPluginBase\SRTPluginBase.csproj", "{8A136F88-A661-40E7-AE8E-70D0A40F3A70}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRTPluginProviderRE2", "SRTPluginProviderRE2\SRTPluginProviderRE2.csproj", "{F60B024A-E3AD-47E8-9056-6A86B3732B95}"
 EndProject
@@ -15,10 +13,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FFB63975-C00B-42C7-9272-74A98F282FED}.Debug|x64.ActiveCfg = Debug|x64
-		{FFB63975-C00B-42C7-9272-74A98F282FED}.Debug|x64.Build.0 = Debug|x64
-		{FFB63975-C00B-42C7-9272-74A98F282FED}.Release|x64.ActiveCfg = Release|x64
-		{FFB63975-C00B-42C7-9272-74A98F282FED}.Release|x64.Build.0 = Release|x64
 		{8A136F88-A661-40E7-AE8E-70D0A40F3A70}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{8A136F88-A661-40E7-AE8E-70D0A40F3A70}.Debug|x64.Build.0 = Debug|Any CPU
 		{8A136F88-A661-40E7-AE8E-70D0A40F3A70}.Release|x64.ActiveCfg = Release|Any CPU
