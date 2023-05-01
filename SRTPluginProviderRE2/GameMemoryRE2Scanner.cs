@@ -13,6 +13,7 @@ namespace SRTPluginProviderRE2
         private readonly int mSize = 0x18;
 
         // Variables
+        private GameVersion gv;
         private ProcessMemoryHandler memoryAccess;
         private GameMemoryRE2 gameMemoryValues;
         public bool HasScanned;
@@ -34,7 +35,6 @@ namespace SRTPluginProviderRE2
         private MultilevelPointer PointerInventoryManager { get; set; }
         private MultilevelPointer PointerEnemyManager { get; set; }
 
-        // private InventoryEntry EmptySlot = new InventoryEntry();
         private DifficultyParamClass[] dpc;
 
         internal GameMemoryRE2Scanner(Process process = null)
@@ -59,7 +59,8 @@ namespace SRTPluginProviderRE2
             if (process == null)
                 return; // Do not continue if this is null.
 
-            if (!SelectPointerAddresses(GameHashes.DetectVersion(process.MainModule.FileName)))
+            gv = SelectPointerAddresses(GameHashes.DetectVersion(process.MainModule.FileName));
+            if (gv == GameVersion.Unknown)
                 return; // Unknown version.
 
             int pid = GetProcessId(process).Value;
@@ -78,28 +79,34 @@ namespace SRTPluginProviderRE2
             }
         }
 
-        private bool SelectPointerAddresses(GameVersion version)
+        private GameVersion SelectPointerAddresses(GameVersion version)
         {
             switch (version)
             {
-                case GameVersion.RE2_WW_20230418_1:
+                case GameVersion.RE2_WW_11026357:
                     {
+                        paEnemyManager = 0x091A6A08;
+                        paGameClock = 0x091AEC78;
                         paGameRankSystem = 0x09184EC0;
                         paPlayerManager = 0x091AD1F0;
-                        paGameClock = 0x091AEC78;
                         paInventoryManager = 0x091A6CD0;
-                        paEnemyManager = 0x091A6A08;
-                        return true;
+                        return GameVersion.RE2_WW_11026357;
+                    }
+                case GameVersion.RE2_WW_11055033:
+                    {
+                        paEnemyManager = 0x070A69E0;
+                        paGameClock = 0x070AEBB8;
+                        paGameRankSystem = 0x070B8528;
+                        paInventoryManager = 0x070B23A8;
+                        paPlayerManager = 0x070AA850;
+                        return GameVersion.RE2_WW_11055033;
                     }
             }
 
             // If we made it this far... rest in pepperonis. We have failed to detect any of the correct versions we support and have no idea what pointer addresses to use. Bail out.
-            return false;
+            return GameVersion.Unknown;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
         internal void UpdatePointers()
         {
             PointerGameClock.UpdatePointers();
@@ -111,6 +118,7 @@ namespace SRTPluginProviderRE2
 
         internal unsafe IGameMemoryRE2 Refresh()
         {
+            bool isDX12 = (gv == GameVersion.RE2_WW_11026357);
             // GameClock
             var gc = PointerGameClock.Deref<GameClock>(0x0);
             var gsd = memoryAccess.GetAt<GameClockGameSaveData>((nuint*)gc.GameSaveData);
@@ -118,10 +126,25 @@ namespace SRTPluginProviderRE2
 
             // GameRankSystem
             var grs = PointerGameRankSystem.Deref<GameRankSystem>(0x0);
-            var grpd = memoryAccess.GetAt<GameRankParameterData>((nuint*)grs.GameRankParameter);
-            dpc[0] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpd.DifficultyParamEasy);
-            dpc[1] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpd.DifficultyParamNormal);
-            dpc[2] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpd.DifficultyParamHard);
+
+            GameRankParameterData grpd;
+            GameRankParameterDataDX11 grpdx11;
+            
+            if (isDX12)
+            {
+                grpd = memoryAccess.GetAt<GameRankParameterData>((nuint*)grs.GameRankParameter);
+                dpc[0] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpd.DifficultyParamEasy);
+                dpc[1] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpd.DifficultyParamNormal);
+                dpc[2] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpd.DifficultyParamHard);
+            }
+            else if (!isDX12)
+            {
+                grpdx11 = memoryAccess.GetAt<GameRankParameterDataDX11>((nuint*)grs.GameRankParameter);
+                dpc[0] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpdx11.DifficultyParamEasy);
+                dpc[1] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpdx11.DifficultyParamNormal);
+                dpc[2] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpdx11.DifficultyParamHard);
+            }
+            
             gameMemoryValues._rankManager.SetValues(grs, dpc);
 
             // PlayerManager
