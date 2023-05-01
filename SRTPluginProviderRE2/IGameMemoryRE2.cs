@@ -22,6 +22,8 @@ namespace SRTPluginProviderRE2
 
         int EnemyCount { get; }
 
+        Enemy[] Enemies { get; }
+
         int EnemyKillCount { get; }
     }
 }

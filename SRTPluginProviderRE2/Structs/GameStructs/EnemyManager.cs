@@ -4,18 +4,26 @@ using System.Runtime.InteropServices;
 
 namespace SRTPluginProviderRE2.Structs.GameStructs
 {
-    public class Enemy
+    public struct Enemy
     {
-        public Enemy()
-        {
-        }
+        private int enemyType;
+        private int currentHP;
+        private int maxHP;
 
-        public void SetValues()
+        public int EnemyType { get => enemyType; set => enemyType = value; }
+        public int CurrentHP { get => currentHP; set => currentHP = value; }
+        public int MaxHP { get => maxHP; set => maxHP = value; }
+        public bool IsAlive => CurrentHP > 0;
+
+        public void SetValues(int et, HitPointController? hpc)
         {
+            EnemyType = et;
+            CurrentHP = hpc?.CurrentHP ?? 0;
+            MaxHP = hpc?.MaxHP ?? 0;
         }
     }
 
-    [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x2A0)]
+    [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x180)]
     public struct EnemyManager
     {
         [FieldOffset(0x50)] private nint enemyList;
