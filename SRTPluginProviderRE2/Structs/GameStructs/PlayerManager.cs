@@ -13,11 +13,22 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         private Vec3 position;
 
         public SurvivorType CurrentSurvivor { get => currentSurvivor; set => currentSurvivor = value; }
+        public string CurrentSurvivorString => CurrentSurvivor.ToString();
         public Costume CurrentCostume { get => currentCostume; set => currentCostume = value; }
+        public string CurrentCostumeString => CurrentCostume.ToString();
         public HitPointController Health { get => hitPointController; set => hitPointController = value; }
         public bool IsPoisoned { get => isPoisoned; set => isPoisoned = value; }
         public Vec3 Position { get => position; set => position = value; }
-
+        public PlayerState HealthState
+        {
+            get =>
+                !Health.IsAlive ? PlayerState.Dead :
+                !IsPoisoned ? PlayerState.Poisoned :
+                Health.Percentage >= 0.66f ? PlayerState.Fine :
+                Health.Percentage >= 0.33f ? PlayerState.Caution :
+                PlayerState.Danger;
+        }
+        public string CurrentHealthState => HealthState.ToString();
         public Player()
         {
             currentSurvivor = default(SurvivorType);
@@ -26,7 +37,6 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
             isPoisoned = false;
             position = new Vec3(0,0,0);
         }
-
         public void SetValues(PlayerCondition pc, CostumeChanger cc, HitPointController hpc)
         {
             currentSurvivor = pc.SurvivorType;
@@ -101,6 +111,17 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         public int CurrentHP => currentHitPoint;
         public bool Invincible => invincible != 0;
         public bool NoDamage => noDamage != 0;
+        public float Percentage => CurrentHP > 0 ? (float)CurrentHP / (float)MaxHP : 0f;
+        public bool IsAlive => CurrentHP != 0 && MaxHP != 0 && CurrentHP > 0 && CurrentHP <= MaxHP;
+    }
+
+    public enum PlayerState : int
+    {
+        Dead,
+        Fine,
+        Caution,
+        Danger,
+        Poisoned
     }
 
     public enum SurvivorType : int
@@ -108,10 +129,10 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         Invalid = -1,
         Leon = 0,
         Claire = 1,
-        PL2000 = 2,
-        PL3000 = 3,
-        PL4000 = 4,
-        PL4100 = 5,
+        Ada = 2,
+        Sherry = 3,
+        Hunk = 4,
+        Tofu = 5,
         PL5000 = 6,
         PL5100 = 7,
         PL5200 = 8,

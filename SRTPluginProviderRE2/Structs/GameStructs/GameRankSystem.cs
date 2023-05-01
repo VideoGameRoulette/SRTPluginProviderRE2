@@ -41,6 +41,18 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
     }
 
     [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x88)]
+    public struct GameRankParameterDataDX11
+    {
+        [FieldOffset(0x30)] private nint difficultyParamEasy;
+        [FieldOffset(0x38)] private nint difficultyParamNormal;
+        [FieldOffset(0x40)] private nint difficultyParamHard;
+
+        public IntPtr DifficultyParamEasy => IntPtr.Add(difficultyParamEasy, 0x0);
+        public IntPtr DifficultyParamNormal => IntPtr.Add(difficultyParamNormal, 0x0);
+        public IntPtr DifficultyParamHard => IntPtr.Add(difficultyParamHard, 0x0);
+    }
+
+    [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x88)]
     public struct GameRankParameterData
     {
         [FieldOffset(0x20)] private nint difficultyParamEasy;
