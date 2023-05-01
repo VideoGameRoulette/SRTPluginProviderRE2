@@ -18,6 +18,8 @@ namespace SRTPluginProviderRE2
 
         int InventoryCount { get; }
 
+        InventoryEntry[] Items { get; }
+
         int EnemyCount { get; }
 
         int EnemyKillCount { get; }

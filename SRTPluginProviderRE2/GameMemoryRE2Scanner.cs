@@ -50,6 +50,7 @@ namespace SRTPluginProviderRE2
             gameMemoryValues._timer = new GameTimer();
             gameMemoryValues._rankManager = new RankManager();
             gameMemoryValues._playerManager = new Player();
+            gameMemoryValues._items = new InventoryEntry[20];
         }
 
         internal unsafe void Initialize(Process process)
@@ -107,29 +108,6 @@ namespace SRTPluginProviderRE2
             PointerEnemyManager.UpdatePointers();
         }
 
-        public unsafe long GetPointer(long* _baseAddress, params long[] offsets)
-        {
-            fixed (long* p = &_address)
-                memoryAccess.TryGetLongAt(_baseAddress, p);
-
-            if (_address == 0L)
-                return 0;
-
-            if (offsets != null)
-            {
-                foreach (long offset in offsets)
-                {
-                    fixed (long* p = &_address)
-                        memoryAccess.TryGetLongAt((long*)(_address + offset), p);
-
-                    // Out of range.
-                    if (_address == 0L)
-                        return 0;
-                }
-            }
-            return _address;
-        }
-
         internal unsafe IGameMemoryRE2 Refresh()
         {
             // GameClock
@@ -156,10 +134,18 @@ namespace SRTPluginProviderRE2
             var invArray = memoryAccess.GetAt<ListInventory>(im.Inventory);
             var inv = memoryAccess.GetAt<Inventory>(invArray._ListInventory);
             var slots = memoryAccess.GetAt<Slots>(inv.ListSlots);
-            var test = GetPointer((long*)slots._Slots, 0x20);
-            Console.WriteLine(test.ToString("X8"));
             gameMemoryValues._inventoryCount = inv.CurrentSlotSize;
             gameMemoryValues._inventoryMaxCount = slots.Count;
+
+            for (int i = 0; i < slots.Count; i++)
+            {
+                var position = (i * 0x8) + 0x20;
+                var slotAddress = (long*)memoryAccess.GetLongAt(IntPtr.Add(slots._Slots, position));
+                var slot = memoryAccess.GetAt<Slot>(slotAddress);
+                var itemAddress = (long*)memoryAccess.GetLongAt(IntPtr.Add(slot._Slot, 0x10));
+                var item = memoryAccess.GetAt<PrimitiveItem>(itemAddress);
+                gameMemoryValues._items[i].SetValues(slot.Index, item);
+            }
             
             // TO-DO LOOP THRU INVENTROY ARRAY AND UPDATE GAME MEMORY VALUES FOR DATA
 

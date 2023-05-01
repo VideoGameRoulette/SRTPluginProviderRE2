@@ -26,6 +26,9 @@ namespace SRTPluginProviderRE2
         public int InventoryMaxCount { get => _inventoryMaxCount; set => _inventoryMaxCount = value; }
         internal int _inventoryMaxCount;
 
+        public InventoryEntry[] Items { get => _items; set => _items = value; }
+        internal InventoryEntry[] _items;
+
         public int EnemyCount { get => _enemyCount; set => _enemyCount = value; }
         internal int _enemyCount;
 
