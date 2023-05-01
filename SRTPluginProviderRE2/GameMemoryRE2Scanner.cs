@@ -10,6 +10,7 @@ namespace SRTPluginProviderRE2
         // private readonly int MAX_ENTITES = 32;
         private readonly int MAX_ITEMS = 20;
         private readonly int mSize = 0x18;
+        private long _address;
 
         // Variables
         private ProcessMemoryHandler memoryAccess;
@@ -106,6 +107,29 @@ namespace SRTPluginProviderRE2
             PointerEnemyManager.UpdatePointers();
         }
 
+        public unsafe long GetPointer(long* _baseAddress, params long[] offsets)
+        {
+            fixed (long* p = &_address)
+                memoryAccess.TryGetLongAt(_baseAddress, p);
+
+            if (_address == 0L)
+                return 0;
+
+            if (offsets != null)
+            {
+                foreach (long offset in offsets)
+                {
+                    fixed (long* p = &_address)
+                        memoryAccess.TryGetLongAt((long*)(_address + offset), p);
+
+                    // Out of range.
+                    if (_address == 0L)
+                        return 0;
+                }
+            }
+            return _address;
+        }
+
         internal unsafe IGameMemoryRE2 Refresh()
         {
             // GameClock
@@ -132,7 +156,8 @@ namespace SRTPluginProviderRE2
             var invArray = memoryAccess.GetAt<ListInventory>(im.Inventory);
             var inv = memoryAccess.GetAt<Inventory>(invArray._ListInventory);
             var slots = memoryAccess.GetAt<Slots>(inv.ListSlots);
-            // Console.WriteLine(slots._Slots.ToString("X8"));
+            var test = GetPointer((long*)slots._Slots, 0x20);
+            Console.WriteLine(test.ToString("X8"));
             gameMemoryValues._inventoryCount = inv.CurrentSlotSize;
             gameMemoryValues._inventoryMaxCount = slots.Count;
             
