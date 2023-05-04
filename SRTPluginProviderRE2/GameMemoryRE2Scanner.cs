@@ -26,6 +26,8 @@ namespace SRTPluginProviderRE2
         private int paPlayerManager;
         private int paInventoryManager;
         private int paEnemyManager;
+        private int paLocationId;
+        private int paMapId;
 
         // Pointer Classes
         private IntPtr BaseAddress { get; set; }
@@ -34,6 +36,8 @@ namespace SRTPluginProviderRE2
         private MultilevelPointer PointerPlayerCondition { get; set; }
         private MultilevelPointer PointerInventoryManager { get; set; }
         private MultilevelPointer PointerEnemyManager { get; set; }
+        private MultilevelPointer PointerLocationId { get; set; }
+        private MultilevelPointer PointerMapId { get; set; }
 
         private DifficultyParamClass[] dpc;
 
@@ -76,6 +80,8 @@ namespace SRTPluginProviderRE2
                 PointerPlayerCondition = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paPlayerManager), 0x50, 0x10, 0x20);
                 PointerInventoryManager = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paInventoryManager), 0x58);
                 PointerEnemyManager = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paEnemyManager));
+                PointerLocationId = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paLocationId));
+                PointerMapId = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paMapId));
             }
         }
 
@@ -90,6 +96,8 @@ namespace SRTPluginProviderRE2
                         paGameRankSystem = 0x09184EC0;
                         paPlayerManager = 0x091AD1F0;
                         paInventoryManager = 0x091A6CD0;
+                        paLocationId = 0x091A7F80;
+                        paMapId = 0x091A7F84;
                         return GameVersion.RE2_WW_11026357;
                     }
                 case GameVersion.RE2_WW_11055033:
@@ -99,12 +107,24 @@ namespace SRTPluginProviderRE2
                         paGameRankSystem = 0x070B8528;
                         paInventoryManager = 0x070B23A8;
                         paPlayerManager = 0x070AA850;
+                        paLocationId = 0x070A7D80;
+                        paMapId = 0x070A7D84;
                         return GameVersion.RE2_WW_11055033;
                     }
+                case GameVersion.RE2_CEROZ_11055259:
+                    {
+                        paEnemyManager = 0x07095F40;
+                        paGameClock = 0x0709E120;
+                        paGameRankSystem = 0x070A7C88;
+                        paInventoryManager = 0x070A17E0;
+                        paPlayerManager = 0x07099B00;
+                        paLocationId = 0x0;
+                        paMapId = 0x0;
+                        return GameVersion.RE2_CEROZ_11055259;
+                    }
+                default:
+                    return GameVersion.Unknown;
             }
-
-            // If we made it this far... rest in pepperonis. We have failed to detect any of the correct versions we support and have no idea what pointer addresses to use. Bail out.
-            return GameVersion.Unknown;
         }
 
         internal void UpdatePointers()
@@ -114,22 +134,28 @@ namespace SRTPluginProviderRE2
             PointerPlayerCondition.UpdatePointers();
             PointerInventoryManager.UpdatePointers();
             PointerEnemyManager.UpdatePointers();
+            PointerLocationId.UpdatePointers();
+            PointerMapId.UpdatePointers();
         }
 
-        internal unsafe IGameMemoryRE2 Refresh()
+        private unsafe void UpdateGameClock()
         {
-            bool isDX12 = (gv == GameVersion.RE2_WW_11026357);
             // GameClock
             var gc = PointerGameClock.Deref<GameClock>(0x0);
             var gsd = memoryAccess.GetAt<GameClockGameSaveData>((nuint*)gc.GameSaveData);
             gameMemoryValues._timer.SetValues(gc, gsd);
+        }
+
+        private unsafe void UpdateGameRankSystem()
+        {
+            bool isDX12 = (gv == GameVersion.RE2_WW_11026357 || gv == GameVersion.RE2_CEROZ_11026476);
 
             // GameRankSystem
             var grs = PointerGameRankSystem.Deref<GameRankSystem>(0x0);
 
             GameRankParameterData grpd;
             GameRankParameterDataDX11 grpdx11;
-            
+
             if (isDX12)
             {
                 grpd = memoryAccess.GetAt<GameRankParameterData>((nuint*)grs.GameRankParameter);
@@ -144,15 +170,21 @@ namespace SRTPluginProviderRE2
                 dpc[1] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpdx11.DifficultyParamNormal);
                 dpc[2] = memoryAccess.GetAt<DifficultyParamClass>((nuint*)grpdx11.DifficultyParamHard);
             }
-            
-            gameMemoryValues._rankManager.SetValues(grs, dpc);
 
+            gameMemoryValues._rankManager.SetValues(grs, dpc);
+        }
+
+        private unsafe void UpdatePlayerManager()
+        {
             // PlayerManager
             var pc = PointerPlayerCondition.Deref<PlayerCondition>(0x0);
             var cc = memoryAccess.GetAt<CostumeChanger>((nuint*)pc.CostumeChanger);
             var hpc = memoryAccess.GetAt<HitPointController>((nuint*)pc.HitPointController);
             gameMemoryValues._playerManager.SetValues(pc, cc, hpc);
+        }
 
+        private unsafe void UpdateInventoryManager()
+        {
             // InventoryManager
             var im = PointerInventoryManager.Deref<InventoryManager>(0x0);
             var invArray = memoryAccess.GetAt<ListInventory>((nuint*)im.Inventory);
@@ -167,37 +199,56 @@ namespace SRTPluginProviderRE2
                 var slotAddress = (long*)memoryAccess.GetLongAt((nuint*)IntPtr.Add(slots._Slots, position));
                 var slot = memoryAccess.GetAt<Slot>(slotAddress);
                 var itemAddress = (long*)memoryAccess.GetLongAt((nuint*)IntPtr.Add(slot._Slot, 0x10));
+                var slotId = memoryAccess.GetIntAt((nuint*)IntPtr.Add(slot._Slot, 0x28));
                 var item = memoryAccess.GetAt<PrimitiveItem>(itemAddress);
-                gameMemoryValues._items[i].SetValues(slot.Index, item);
+                gameMemoryValues._items[i].SetValues(slotId, item);
             }
+        }
 
+        private unsafe void UpdateEnemyManager()
+        {
             // EnemyManager
             var em = PointerEnemyManager.Deref<EnemyManager>(0x0);
             gameMemoryValues._enemyKillCount = em.TotalEnemyKillCount;
-            var el = memoryAccess.GetLongAt((nuint*)IntPtr.Add(em.EnemyList, 0x10));
             var ael = memoryAccess.GetLongAt((nuint*)IntPtr.Add(em.ActiveEnemyList, 0x10));
             gameMemoryValues._enemyCount = memoryAccess.GetIntAt((nuint*)IntPtr.Add(em.ActiveEnemyList, mSize));
+
             for (int i = 0; i < MAX_ENTITES; i++)
             {
                 if (i > gameMemoryValues.EnemyCount)
                 {
-                    gameMemoryValues._enemies[i].SetValues(0, null);
+                    gameMemoryValues._enemies[i].SetValues(-1, null);
                     continue;
                 }
                 var position = (i * 0x8) + 0x20;
-                // EnemyList
-                var eAddress = memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)el, position));
-                var ec1 = memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)eAddress, 0x18));
-                var ecc1 = memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)ec1, 0x20));
-                var enemyType = memoryAccess.GetIntAt((nuint*)IntPtr.Add((IntPtr)ecc1, 0x54));
-                // ActiveEnemyList
-                var aeAddress = memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)ael, position));
-                var hc = memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)aeAddress, 0x218));
+                var ec = memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)ael, position));
+                var ecc = memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)ec, 0x140));
+                var id = memoryAccess.GetIntAt((nuint*)IntPtr.Add((IntPtr)ecc, 0x54));
+                var hc = memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)ec, 0x218));
                 var ehpc = (long*)memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)hc, 0xB8));
                 var enemyHP = memoryAccess.GetAt<HitPointController>(ehpc);
-                gameMemoryValues._enemies[i].SetValues(enemyType, enemyHP);
+                gameMemoryValues._enemies[i].SetValues(id, enemyHP);
             }
 
+        }
+
+        private unsafe void UpdateLocation()
+        {
+            gameMemoryValues._locationID = memoryAccess.GetIntAt(PointerLocationId.BaseAddress);
+            gameMemoryValues._locationName = ((LocationID)gameMemoryValues._locationID).ToString();
+
+            gameMemoryValues._mapID = memoryAccess.GetIntAt(PointerMapId.BaseAddress);
+            gameMemoryValues._mapName = ((MapID)gameMemoryValues._mapID).ToString();
+        }
+
+        internal unsafe IGameMemoryRE2 Refresh()
+        {
+            UpdateGameClock();
+            UpdateGameRankSystem();
+            UpdatePlayerManager();
+            UpdateInventoryManager();
+            UpdateEnemyManager();
+            UpdateLocation();
             HasScanned = true;
             return gameMemoryValues;
         }

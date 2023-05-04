@@ -10,8 +10,8 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         private int currentHP;
         private int maxHP;
 
-        public EnemyType EnemyType { get => (EnemyType)enemyType; set => enemyType = (int)value; }
-        public string EnemyTypeString => EnemyType.ToString();
+        public KindID EnemyID { get => (KindID)enemyType; set => enemyType = (int)value; }
+        public string EnemyTypeString => EnemyID.ToString();
         public int CurrentHP { get => currentHP; set => currentHP = value; }
         public int MaxHP { get => maxHP; set => maxHP = value; }
         public float Percentage => CurrentHP > 0 ? (float)CurrentHP / (float)MaxHP : 0f;
@@ -19,7 +19,7 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
 
         public void SetValues(int et, HitPointController? hpc)
         {
-            EnemyType = (EnemyType)et;
+            EnemyID = (KindID)et;
             CurrentHP = hpc?.CurrentHP ?? 0;
             MaxHP = hpc?.MaxHP ?? 0;
         }
@@ -36,24 +36,35 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         public int TotalEnemyKillCount => totalEnemyKillCount;
     }
 
-    public enum EnemyType : int
+    public enum KindID : int
     {
-        ZOMBIE = 0,
-        EM3000 = 1,
-        EM4000 = 2,
-        EM4100 = 3,
-        EM4400 = 4,
-        EM5000 = 5,
-        EM6000 = 6,
-        EM6100 = 7,
-        EM6200 = 8,
-        EM6300 = 9,
-        EM7000 = 10,
-        EM7100 = 11,
-        EM7110 = 12,
-        EM7200 = 13,
-        EM7300 = 14,
-        EM7400 = 15,
-        EM9000 = 16,
+        em0000 = 0,
+        em0100 = 1,
+        em0200 = 2,
+        em3000 = 3,
+        em4000 = 4,
+        em4100 = 5,
+        em4400 = 6,
+        em5000 = 7,
+        em6000 = 8,
+        em6100 = 9,
+        em6200 = 10,
+        em6300 = 11,
+        em7000 = 12,
+        em7100 = 13,
+        em7110 = 14,
+        em7200 = 15,
+        em7300 = 16,
+        em7400 = 17,
+        em9000 = 18,
+        em8000 = 19,
+        em8100 = 20,
+        em8200 = 21,
+        em8300 = 22,
+        em8400 = 23,
+        em8500 = 24,
+        em9999 = 25,
+        MAX = 26,
+        Invalid = -1,
     };
 }

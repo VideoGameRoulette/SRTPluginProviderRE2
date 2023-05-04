@@ -25,5 +25,13 @@ namespace SRTPluginProviderRE2
         Enemy[] Enemies { get; }
 
         int EnemyKillCount { get; }
+
+        int LocationID { get; }
+
+        string LocationName { get; }
+
+        int MapID { get; }
+
+        string MapName { get; }
     }
 }

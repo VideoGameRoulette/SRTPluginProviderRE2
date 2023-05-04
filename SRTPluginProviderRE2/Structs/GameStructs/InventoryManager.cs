@@ -37,6 +37,7 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         public int Count { get => count; set => count = value; }
         public bool IsItem => ItemId != ItemID.None && WeaponId == WeaponType.Invalid;
         public bool IsWeapon => ItemId == ItemID.None && WeaponId != WeaponType.Invalid;
+        public bool IsEmptySlot => !IsItem && !IsWeapon;
         public string ItemName => ItemId.ToString();
         public string WeaponName => WeaponId.ToString();
         public string WeaponPartFlags => WeaponParts.ToString();
@@ -244,6 +245,8 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         WoodenBox2 = 0x0127,
         TinStorageBox2 = 0x0128,
         MAX = 297,
+        JointPlug2 = 0x7F000001,
+        GearLarge2 = 0x7F000002,
     };
 
     public enum WeaponType : int
@@ -260,7 +263,7 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         Handgun_BroomHc = 0x08,
         Handgun_SLS60 = 0x09,
         WP0900 = 10,
-        WP1000 = 11,
+        Shotgun_W870 = 0x0B,
         WP1100 = 12,
         WP1200 = 13,
         WP1300 = 14,
@@ -631,15 +634,28 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         WP9970 = 379,
         WP9980 = 380,
         WP9990 = 381,
+        // Added because these images exist but the item ids do not?
+        ChemicalFlamethrower2 = 0x7F000001,
+        SparkShot2 = 0x7F000002,
+        ATM42 = 0x7F000003,
+        ATM43 = 0x7F000004,
+        ATM44 = 0x7F000005,
+        AntiTankRocketLauncher2 = 0x7F000006,
+        AntiTankRocketLauncher3 = 0x7F000007,
+        AntiTankRocketLauncher4 = 0x7F000008,
+        Minigun2 = 0x7F000009,
+        Minigun3 = 0x7F00000A,
+        Minigun4 = 0x7F00000B,
+        SMG_LE5_Infinite2 = 0x7F00000C,
     }
 
     [Flags]
     public enum WeaponParts : int
     {
         None = 0,
-        A = 1,
-        B = 2,
-        C = 4,
+        First = 1,
+        Second = 2,
+        Third = 4,
         FullCustom = 7,
     }
 }

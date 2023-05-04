@@ -37,5 +37,17 @@ namespace SRTPluginProviderRE2
 
         public int EnemyKillCount { get => _enemyKillCount; set => _enemyKillCount = value; }
         internal int _enemyKillCount;
+
+        public int LocationID { get => _locationID; set => _locationID = value; }
+        internal int _locationID;
+
+        public string LocationName { get => _locationName; set => _locationName = value; }
+        internal string _locationName;
+
+        public int MapID { get => _mapID; set => _mapID = value; }
+        internal int _mapID;
+
+        public string MapName { get => _mapName; set => _mapName = value; }
+        internal string _mapName;
     }
 }
