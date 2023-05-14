@@ -10,8 +10,8 @@
     <Copyright>Copyright © 2023 VideoGameRoulette</Copyright>
     <Product>Resident Evil 2 (2019) Memory Provider Plugin</Product>
     <Description>A provider plugin for the SRT Host to provide memory values to other plugins.</Description>
-    <Version>2.0.0.4</Version>
-    <FileVersion>2.0.0.4</FileVersion>
+    <Version>2.0.0.8</Version>
+    <FileVersion>2.0.0.8</FileVersion>
     <AssemblyVersion>3.0.0.0</AssemblyVersion>
     <DebugType>embedded</DebugType>
     <!-- netcoreapp3.1 had to be hardcoded here because this project reports $(TargetFramework) as netstandard2.0 (rightfully so) and I am not sure how this project's csproj can auto-detect another project's framework version to copy it to the appropriate folder so we're just... hardcoding this. -->

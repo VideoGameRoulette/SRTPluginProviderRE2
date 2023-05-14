@@ -18,7 +18,7 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         public string CurrentCostumeString => CurrentCostume.ToString();
         public HitPointController Health { get => hitPointController; set => hitPointController = value; }
         public bool IsPoisoned { get => isPoisoned; set => isPoisoned = value; }
-        public bool IsLoaded => (int)CurrentSurvivor != 32758;
+        public bool IsLoaded => (int)CurrentSurvivor <= 55 && Health.MaxHP >= 1200;
         public Vec3 Position { get => position; set => position = value; }
         public PlayerState HealthState
         {
@@ -118,7 +118,7 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
 
     public enum MapID
     {
-        Invalid = 0,
+        None = 0,
         st0_101_0 = 1,
         st0_102_0 = 2,
         st1_101_0 = 3,
@@ -558,7 +558,7 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
 
     public enum LocationID
     {
-        invalid = 0,
+        None = 0,
         CityArea = 1,
         Factory = 2,
         Laboratory = 3,

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -35,13 +36,28 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         public WeaponParts WeaponParts { get => weaponParts; set => weaponParts = value; }
         public ItemID BulletId { get => bulletId; set => bulletId = value; }
         public int Count { get => count; set => count = value; }
-        public bool IsItem => ItemId != ItemID.None && WeaponId == WeaponType.Invalid;
-        public bool IsWeapon => ItemId == ItemID.None && WeaponId != WeaponType.Invalid;
+        public bool IsItem => ItemId != ItemID.None && WeaponId == WeaponType.Invalid || ItemId != ItemID.None && WeaponId == WeaponType.BareHand;
+        public bool IsWeapon => ItemId == ItemID.None && WeaponId != WeaponType.Invalid && WeaponId != WeaponType.BareHand;
         public bool IsEmptySlot => !IsItem && !IsWeapon;
         public string ItemName => ItemId.ToString();
         public string WeaponName => WeaponId.ToString();
-        public string WeaponPartFlags => WeaponParts.ToString();
+        public string WeaponPartFlags => GetFlagsString(WeaponParts);
+        public string ItemDebug => IsItem ? ItemName : WeaponName + GetFlagsString(WeaponParts);
+        public bool IsFatSlot { get => Utils.Slot2Items.Contains(ItemDebug); }
         public string BulletName => BulletId.ToString();
+
+        private string GetFlagsString(WeaponParts _weaponParts)
+        {
+            List<string> includedParts = new List<string>();
+            if (_weaponParts.HasFlag(WeaponParts.First))
+                includedParts.Add(nameof(WeaponParts.First));
+            if (_weaponParts.HasFlag(WeaponParts.Second))
+                includedParts.Add(nameof(WeaponParts.Second));
+            if (_weaponParts.HasFlag(WeaponParts.Third))
+                includedParts.Add(nameof(WeaponParts.Third));
+            string result = string.Join("_", includedParts);
+            return result;
+        }
 
         public void SetValues(int index, PrimitiveItem item)
         {
@@ -54,6 +70,34 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         }
     }
 
+    public class Utils
+    {
+        public static List<string> Slot2Items = new List<string>()
+        {
+            "AntiTankRocketLauncher",
+            "ATM4_Infinite",
+            "ChemicalFlamethrower",
+            "ChemicalFlamethrowerSecond",
+            "GearLarge",
+            "GrenadeLauncher_GM79First",
+            "Handgun_LightningHawkFirst",
+            "Handgun_LightningHawkFirst_Second",
+            "Handgun_MatildaFirst",
+            "Handgun_MatildaFirst_Second",
+            "Handgun_MatildaFirst_Third",
+            "Handgun_MatildaFirst_Second_Third",
+            "Minigun",
+            "Shotgun_W870First",
+            "Shotgun_W870First_Second",
+            "SMG_LE5_Infinite",
+            "SMG_MQ11First",
+            "SMG_MQ11First_Second",
+            "SparkShot",
+            "SparkShotFirst",
+            "JointPlug"
+        };
+    }
+
     [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x20)]
     public struct InventoryManager
     {
@@ -63,7 +107,17 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         public int Count => mSize;
     }
 
+    [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x40)]
+    public struct ShortcutManager
+    {
+        [FieldOffset(0x18)] private nint entries;
+        [FieldOffset(0x20)] private int mSize;
+        public IntPtr Entries => IntPtr.Add(entries, 0x0);
+        public int Count => mSize;
+    }
+
     [StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x20)]
+
     public struct ListInventory
     {
         [FieldOffset(0x20)] private nint listInventory;
@@ -656,6 +710,5 @@ namespace SRTPluginProviderRE2.Structs.GameStructs
         First = 1,
         Second = 2,
         Third = 4,
-        FullCustom = 7,
     }
 }

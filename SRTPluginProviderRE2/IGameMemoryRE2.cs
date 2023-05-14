@@ -19,6 +19,17 @@ namespace SRTPluginProviderRE2
         int InventoryCount { get; }
 
         InventoryEntry[] Items { get; }
+        int ShortcutCount { get; }
+
+        InventoryEntry[] Shortcuts { get; }
+
+        int SubShortcutCount { get; }
+
+        InventoryEntry[] SubShortcuts { get; }
+
+        PrimitiveItem MainSlot { get; }
+
+        PrimitiveItem SubSlot { get; }
 
         int EnemyCount { get; }
 

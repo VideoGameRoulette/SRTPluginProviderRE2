@@ -10,6 +10,7 @@ namespace SRTPluginProviderRE2
     {
         private readonly int MAX_ENTITES = 32;
         private readonly int MAX_ITEMS = 20;
+        private readonly int MAX_SHORTCUTS = 4;
         private readonly int mSize = 0x18;
 
         // Variables
@@ -35,6 +36,10 @@ namespace SRTPluginProviderRE2
         private MultilevelPointer PointerGameRankSystem { get; set; }
         private MultilevelPointer PointerPlayerCondition { get; set; }
         private MultilevelPointer PointerInventoryManager { get; set; }
+        private MultilevelPointer PointerShortcutManager { get; set; }
+        private MultilevelPointer PointerSubShortcutManager { get; set; }
+        private MultilevelPointer PointerMainSlot { get; set; }
+        private MultilevelPointer PointerSubSlot { get; set; }
         private MultilevelPointer PointerEnemyManager { get; set; }
         private MultilevelPointer PointerLocationId { get; set; }
         private MultilevelPointer PointerMapId { get; set; }
@@ -55,6 +60,8 @@ namespace SRTPluginProviderRE2
             gameMemoryValues._rankManager = new RankManager();
             gameMemoryValues._playerManager = new Player();
             gameMemoryValues._items = new InventoryEntry[MAX_ITEMS];
+            gameMemoryValues._shortcuts = new InventoryEntry[MAX_SHORTCUTS];
+            gameMemoryValues._subShortcuts = new InventoryEntry[MAX_SHORTCUTS];
             gameMemoryValues._enemies = new Enemy[MAX_ENTITES];
         }
 
@@ -79,6 +86,10 @@ namespace SRTPluginProviderRE2
                 PointerGameRankSystem = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paGameRankSystem));
                 PointerPlayerCondition = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paPlayerManager), 0x50, 0x10, 0x20);
                 PointerInventoryManager = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paInventoryManager), 0x58);
+                PointerShortcutManager = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paInventoryManager), 0x50, 0xB8);
+                PointerSubShortcutManager = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paInventoryManager), 0x50, 0xC0);
+                PointerMainSlot = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paInventoryManager), 0x50, 0xA0, 0x18, 0x10);
+                PointerSubSlot = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paInventoryManager), 0x50, 0xA8, 0x18, 0x10);
                 PointerEnemyManager = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paEnemyManager));
                 PointerLocationId = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paLocationId));
                 PointerMapId = new MultilevelPointer(memoryAccess, (nint*)(BaseAddress + paMapId));
@@ -133,6 +144,10 @@ namespace SRTPluginProviderRE2
             PointerGameRankSystem.UpdatePointers();
             PointerPlayerCondition.UpdatePointers();
             PointerInventoryManager.UpdatePointers();
+            PointerShortcutManager.UpdatePointers();
+            PointerSubShortcutManager.UpdatePointers();
+            PointerMainSlot.UpdatePointers();
+            PointerSubSlot.UpdatePointers();
             PointerEnemyManager.UpdatePointers();
             PointerLocationId.UpdatePointers();
             PointerMapId.UpdatePointers();
@@ -205,6 +220,33 @@ namespace SRTPluginProviderRE2
             }
         }
 
+        private unsafe void UpdateShortcutManager()
+        {
+            // InventoryManager
+            var sm = PointerShortcutManager.Deref<ShortcutManager>(0x0);
+            var ssm = PointerSubShortcutManager.Deref<ShortcutManager>(0x0);
+
+            for (int i = 0; i < MAX_SHORTCUTS; i++)
+            {
+                // Main
+                var position = (i * 0x18) + 0x30;
+                var slotAddress = (long*)memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)sm.Entries, position));
+                var slot = memoryAccess.GetAt<Slot>(slotAddress);
+                var itemAddress = (long*)memoryAccess.GetLongAt((nuint*)IntPtr.Add(slot._Slot, 0x10));
+                var slotId = memoryAccess.GetIntAt((nuint*)IntPtr.Add(slot._Slot, 0x28));
+                var item = memoryAccess.GetAt<PrimitiveItem>(itemAddress);
+                gameMemoryValues._shortcuts[i].SetValues(slotId, item);
+
+                // Sub
+                var slotAddress2 = (long*)memoryAccess.GetLongAt((nuint*)IntPtr.Add((IntPtr)ssm.Entries, position));
+                var slot2 = memoryAccess.GetAt<Slot>(slotAddress2);
+                var itemAddress2 = (long*)memoryAccess.GetLongAt((nuint*)IntPtr.Add(slot2._Slot, 0x10));
+                var slotId2 = memoryAccess.GetIntAt((nuint*)IntPtr.Add(slot2._Slot, 0x28));
+                var item2 = memoryAccess.GetAt<PrimitiveItem>(itemAddress2);
+                gameMemoryValues._subShortcuts[i].SetValues(slotId2, item2);
+            }
+        }
+
         private unsafe void UpdateEnemyManager()
         {
             // EnemyManager
@@ -241,12 +283,20 @@ namespace SRTPluginProviderRE2
             gameMemoryValues._mapName = ((MapID)gameMemoryValues._mapID).ToString();
         }
 
+        private unsafe void UpdateEquippedItems()
+        {
+            gameMemoryValues._mainSlot = PointerMainSlot.Deref<PrimitiveItem>(0x0);
+            gameMemoryValues._subSlot = PointerSubSlot.Deref<PrimitiveItem>(0x0);
+        }
+
         internal unsafe IGameMemoryRE2 Refresh()
         {
             UpdateGameClock();
             UpdateGameRankSystem();
             UpdatePlayerManager();
             UpdateInventoryManager();
+            UpdateShortcutManager();
+            UpdateEquippedItems();
             UpdateEnemyManager();
             UpdateLocation();
             HasScanned = true;
