@@ -100,17 +100,21 @@ namespace SRTPluginProviderRE2
         {
             switch (version)
             {
-                case GameVersion.RE2_WW_11026357:
+                // DX12
+                case GameVersion.RE2_CEROZ_11636615:
+                case GameVersion.RE2_WW_11636119:
                     {
-                        paEnemyManager = 0x091A6A08;
-                        paGameClock = 0x091AEC78;
-                        paGameRankSystem = 0x09184EC0;
-                        paPlayerManager = 0x091AD1F0;
-                        paInventoryManager = 0x091A6CD0;
-                        paLocationId = 0x091A7F80;
-                        paMapId = 0x091A7F84;
-                        return GameVersion.RE2_WW_11026357;
+                        paEnemyManager = 0x091A6AF8;
+                        paGameClock = 0x091AED68;
+                        paGameRankSystem = 0x9184F98;
+                        paPlayerManager = 0x091AD2C0;
+                        paInventoryManager = 0x91A6DC0;
+                        paLocationId = 0x91A8070;
+                        paMapId = 0x91A8074;
+                        return version;
                     }
+                // DX11
+                case GameVersion.RE2_CEROZ_11055259:
                 case GameVersion.RE2_WW_11055033:
                     {
                         paEnemyManager = 0x070A69E0;
@@ -120,18 +124,7 @@ namespace SRTPluginProviderRE2
                         paPlayerManager = 0x070AA850;
                         paLocationId = 0x070A7D80;
                         paMapId = 0x070A7D84;
-                        return GameVersion.RE2_WW_11055033;
-                    }
-                case GameVersion.RE2_CEROZ_11055259:
-                    {
-                        paEnemyManager = 0x07095F40;
-                        paGameClock = 0x0709E120;
-                        paGameRankSystem = 0x070A7C88;
-                        paInventoryManager = 0x070A17E0;
-                        paPlayerManager = 0x07099B00;
-                        paLocationId = 0x0;
-                        paMapId = 0x0;
-                        return GameVersion.RE2_CEROZ_11055259;
+                        return version;
                     }
                 default:
                     return GameVersion.Unknown;
@@ -163,7 +156,7 @@ namespace SRTPluginProviderRE2
 
         private unsafe void UpdateGameRankSystem()
         {
-            bool isDX12 = (gv == GameVersion.RE2_WW_11026357 || gv == GameVersion.RE2_CEROZ_11026476);
+            bool isDX12 = (gv == GameVersion.RE2_WW_11636119 || gv == GameVersion.RE2_CEROZ_11636615);
 
             // GameRankSystem
             var grs = PointerGameRankSystem.Deref<GameRankSystem>(0x0);
